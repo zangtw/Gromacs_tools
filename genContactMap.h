@@ -21,7 +21,7 @@ void contactMap_del(contactMap *p_myMap);
 /* manually reset the map. Map is also reseted in genMap(automatically). */
 void contactMap_reset(contactMap *p_myMap);
 void contactMap_genMap(contactMap *p_myMap, real *x, int *group_idx1,
-		                   int *group_idx2, real cutoff2);
+                       int *group_idx2, real cutoff2);
 void contactMap_calcMapDist(contactMap *p_myMap, contactMap *p_refMap, int *d);
 void contactMap_mapStat_addMap(contactMap *p_myMap);
 void contactMap_mapStat_del();
