@@ -102,7 +102,7 @@ static void genMultiDimensionalStrings(int d, char **v, char *s, va_list args)
 static void Hash_insertKey_Kernel(hashTable *h, char *key, int d, va_list args)
 {
   int bBuf = (key == NULL); 
-  char string_buf[256]; /* will only be used when key is not avaiable */
+  char string_buf[256]; /* will only be used when key is not available. */
   char **vector_buf;
   int i;
   int k;
@@ -234,7 +234,7 @@ void Hash_addData_multiD(hashTable *h, double x, int d, ...)
     currNode = currNode->next;
   }
 
-  fprintf(stderr, "AddData: key \"%s\" is not avaiable. Will add a new key. \
+  fprintf(stderr, "AddData: key \"%s\" is not available. Will add a new key. \
 @%s, line %d.\n", buf, __FILE__, __LINE__);
 
   va_start(args, d);
