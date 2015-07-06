@@ -11,8 +11,8 @@ int main()
   char **stringKeyList;
   char ***vectorKeyList;
   int *dimensionList;
-  int i, j;
   double e, v;
+  int i, j;
 
   Hash_init(&h, 7);
   
