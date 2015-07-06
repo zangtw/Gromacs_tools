@@ -89,4 +89,6 @@ int main()
   for(i=0; i<size; i++)
     free(a[i]);
   free(a);
+
+  return 0;
 }
