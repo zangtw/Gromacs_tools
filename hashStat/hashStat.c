@@ -329,6 +329,7 @@ void Hash_dump_multiD(hashTable *h, double **arr, char **keyList,
   }
 }
 
+/* C does not support overloading :(    */
 void Hash_insertKey(hashTable *h, const char *key) 
 { Hash_insertKey_multiD(h, 1, key); }
 void Hash_removeKey(hashTable *h, const char *key)
