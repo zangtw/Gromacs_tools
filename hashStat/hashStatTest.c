@@ -5,7 +5,6 @@
 
 int main()
 {
-  Hashtable h;
   int size;
   double **a;
   char **stringKeyList;
@@ -14,44 +13,45 @@ int main()
   double e, v;
   int i, j;
 
-  Hash_init(&h, 7);
+  hashTable *h = Hash_init(7);
   
-  Hash_InsertKey(&h, "2");
-  Hash_InsertKey_multiD(&h, 2, "200", "$256");
-  Hash_InsertKey_multiD(&h, 3, "abc", "def", "ghi");
-  Hash_InsertKey_multiD(&h, 2, "abc", "def");
-  Hash_InsertKey_multiD(&h, 5, "@", "*(^B", "#(#D", "l", "F R3e");
-  Hash_InsertKey(&h, "$244d");
+  Hash_insertKey(h, "2");
+  Hash_insertKey_multiD(h, 2, "200", "$256");
+  Hash_insertKey_multiD(h, 3, "abc", "def", "ghi");
+  Hash_insertKey_multiD(h, 2, "abc", "def");
+  Hash_insertKey_multiD(h, 5, "@", "*(^B", "#(#D", "l", "F R3e");
+  Hash_insertKey(h, "$244d");
 
-  Hash_RemoveKey(&h, "2");
-  Hash_RemoveKey(&h, "abc");
-  Hash_RemoveKey_multiD(&h, 2, "abc", "def");
+  Hash_removeKey(h, "2");
+  Hash_removeKey(h, "abc");
+  Hash_removeKey_multiD(h, 2, "abc", "def");
 
-  Hash_AddData(&h, 4, "2");
-  Hash_AddData(&h, 3.5, "2");
-  Hash_AddData(&h, 6.22, "2");
-  Hash_AddData_multiD(&h, 2, 2, "200", "$256");
-  Hash_AddData_multiD(&h, 5.5, 2, "abc", "def");
-  Hash_AddData_multiD(&h, 4.5, 2, "abc", "def");
-  Hash_AddData_multiD(&h, 7, 1, "$244d");
-  Hash_AddData(&h, 6.7, "$244d");
-  Hash_AddData_multiD(&h, 6.7, 2, "$244d", "zzz");
-  Hash_AddData_multiD(&h, 398, 1, "zzz_fwc");
-  Hash_AddData(&h, 104.355, "33");
-  Hash_AddData_multiD(&h, 4.56, 1, "33");
+  Hash_addData(h, 4, "2");
+  Hash_addData(h, 3.5, "2");
+  Hash_addData(h, 6.22, "2");
+  Hash_addData_multiD(h, 2, 2, "200", "$256");
+  Hash_addData_multiD(h, 5.5, 2, "abc", "def");
+  Hash_addData_multiD(h, 4.5, 2, "abc", "def");
+  Hash_addData_multiD(h, 7, 1, "$244d");
+  Hash_addData(h, 6.7, "$244d");
+  Hash_addData_multiD(h, 6.7, 2, "$244d", "zzz");
+  Hash_addData_multiD(h, 398, 1, "zzz_fwc");
+  Hash_addData(h, 104.355, "33");
+  Hash_addData_multiD(h, 4.56, 1, "33");
 
-  Hash_GetSize(&h, &size);
+  Hash_getSize(h, &size);
+  printf("\nsize=%d\n",size);
 
   printf("\nOUTPUT TESTING RESULTS\n");
-  Hash_OutputData(&h, &e, &v, "2");
+  Hash_outputData(h, &e, &v, "2");
   printf("e=%f\tv=%f\n", e, sqrt(v));
-  Hash_OutputData(&h, &e, &v, "$244d");
+  Hash_outputData(h, &e, &v, "$244d");
   printf("e=%f\tv=%f\n", e, sqrt(v));
-  Hash_OutputData_multiD(&h, &e, &v, 2, "3", "3");
-  Hash_OutputData(&h, &e, &v, "abcdefghi");
-  Hash_OutputData_multiD(&h, &e, &v, 1, "33");
+  Hash_outputData_multiD(h, &e, &v, 2, "3", "3");
+  Hash_outputData(h, &e, &v, "abcdefghi");
+  Hash_outputData_multiD(h, &e, &v, 1, "33");
   printf("e=%f\tv=%f\n", e, sqrt(v));
-  Hash_OutputData(&h, &e, &v, "fwefew");
+  Hash_outputData(h, &e, &v, "fwefew");
 
   printf("\nDUMP TESTING RESULTS");
   printf("\nKEY                               MEAN      STD DEV\n");
@@ -62,14 +62,14 @@ int main()
   for(i=0; i<size; i++)
     a[i] = (double *)malloc(2 * sizeof(double));
 
-  Hash_Dump(&h, a, stringKeyList);
+  Hash_dump(h, a, stringKeyList);
 
   for(i=0; i< size; i++)
     printf("%-25s%13.6f%13.6f\n", stringKeyList[i], a[i][0], sqrt(a[i][1]));
 
   printf("\nMULTID DUMP TESTING RESULTS");
   printf("\nKEY              DIMENSION         MEAN      STD DEV\n");
-  Hash_Dump_multiD(&h, a, stringKeyList, dimensionList, vectorKeyList);
+  Hash_dump_multiD(h, a, stringKeyList, dimensionList, vectorKeyList);
   
   for(i=0; i< size; i++)
   {
@@ -81,7 +81,7 @@ int main()
     printf("\n");
   }
   
-  Hash_del(&h);
+  Hash_del(h);
   
   free(stringKeyList);
   free(vectorKeyList);

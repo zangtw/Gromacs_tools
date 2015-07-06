@@ -4,6 +4,21 @@
 #include <stdio.h>
 #include <string.h>
 
+typedef struct hashNode_t hashNode;
+struct hashNode_t{
+  int dimension;
+  char **vectorKey;
+  char *stringKey;
+  double s, e, v;
+  hashNode *next;
+};
+
+struct hashTable_t{
+  int m; /* mod */
+  int size;
+  hashNode **table;
+};
+
 static int hash(const char *str, int m)
 {
   unsigned long hash = 5381;
@@ -18,20 +33,25 @@ static int hash(const char *str, int m)
   return hash % m;
 }
 
-void Hash_init(Hashtable *h, int m)
+hashTable *Hash_init(int m)
 {
+  hashTable *h = (hashTable *)malloc(sizeof(hashTable));
+
   h->m = m;
-  h->table = (HashNode **)malloc(m * sizeof(HashNode *));
+  h->size = 0;
+  h->table = (hashNode **)malloc(m * sizeof(hashNode *));
 
   int i;
   for(i=0; i<m; i++)
     h->table[i] = NULL;
+
+  return h;
 }
 
-void Hash_del(Hashtable *h)
+void Hash_del(hashTable *h)
 {
   int i, j;
-  HashNode *currNode, *nextNode;
+  hashNode *currNode, *nextNode;
 
   for(i=0; i< h->m; i++)
   {
@@ -52,9 +72,10 @@ void Hash_del(Hashtable *h)
   }
 
   free(h->table);
+  free(h);
 }
 
-void Hash_GetSize(Hashtable *h, int *size)
+void Hash_getSize(hashTable *h, int *size)
 {
   *size = h->size;
 }
@@ -78,7 +99,7 @@ static void genMultiDimensionalStrings(int d, char **v, char *s, va_list args)
   }
 }
 
-static void Hash_InsertKey_Kernel(Hashtable *h, char *key, int d, va_list args)
+static void Hash_insertKey_Kernel(hashTable *h, char *key, int d, va_list args)
 {
   int bBuf = (key == NULL); 
   char string_buf[256]; /* will be used only when key is not avaiable */
@@ -93,8 +114,8 @@ static void Hash_InsertKey_Kernel(Hashtable *h, char *key, int d, va_list args)
 
   k = hash(mykey, h->m);
   
-  HashNode *currNode = h->table[k];
-  HashNode *newNode;
+  hashNode *currNode = h->table[k];
+  hashNode *newNode;
 
   while(currNode != NULL)
   {
@@ -106,7 +127,7 @@ static void Hash_InsertKey_Kernel(Hashtable *h, char *key, int d, va_list args)
     currNode = currNode->next;
   }
 
-  newNode = (HashNode *)malloc(sizeof(HashNode));
+  newNode = (hashNode *)malloc(sizeof(hashNode));
   h->size++;
 
   newNode->dimension = d;
@@ -130,17 +151,17 @@ static void Hash_InsertKey_Kernel(Hashtable *h, char *key, int d, va_list args)
 #undef mykey
 }
 
-void Hash_InsertKey_multiD(Hashtable *h, int d, ...)
+void Hash_insertKey_multiD(hashTable *h, int d, ...)
 {
   va_list args;
   va_start(args, d);
   
-  Hash_InsertKey_Kernel(h, NULL, d, args);
+  Hash_insertKey_Kernel(h, NULL, d, args);
 
   va_end(args);
 }
 
-void Hash_RemoveKey_multiD(Hashtable *h, int d, ...)
+void Hash_removeKey_multiD(hashTable *h, int d, ...)
 {
   va_list args;
   char buf[256];
@@ -152,8 +173,8 @@ void Hash_RemoveKey_multiD(Hashtable *h, int d, ...)
   va_end(args);
   
   k = hash(buf, h->m);
-  HashNode *currNode = h->table[k];
-  HashNode *lastNode;
+  hashNode *currNode = h->table[k];
+  hashNode *lastNode;
 
   lastNode = currNode;
   while(currNode != NULL)
@@ -183,7 +204,7 @@ void Hash_RemoveKey_multiD(Hashtable *h, int d, ...)
 @%s, line %d.\n", buf, __FILE__, __LINE__);
 }
 
-void Hash_AddData_multiD(Hashtable *h, double x, int d, ...)
+void Hash_addData_multiD(hashTable *h, double x, int d, ...)
 {
   va_list args;
   char buf[256];
@@ -194,7 +215,7 @@ void Hash_AddData_multiD(Hashtable *h, double x, int d, ...)
   va_end(args);
   
   k = hash(buf, h->m);
-  HashNode *currNode = h->table[k];
+  hashNode *currNode = h->table[k];
 
   while(currNode != NULL)
   {
@@ -217,7 +238,7 @@ void Hash_AddData_multiD(Hashtable *h, double x, int d, ...)
 @%s, line %d.\n", buf, __FILE__, __LINE__);
 
   va_start(args, d);
-  Hash_InsertKey_Kernel(h, buf, d, args);
+  Hash_insertKey_Kernel(h, buf, d, args);
   va_end(args);
   
   currNode = h->table[k];
@@ -225,7 +246,7 @@ void Hash_AddData_multiD(Hashtable *h, double x, int d, ...)
   currNode->e += x;
 }
 
-void Hash_OutputData_multiD(Hashtable *h, double *e, double *v, int d, ...)
+void Hash_outputData_multiD(hashTable *h, double *e, double *v, int d, ...)
 {
   va_list args;
   char buf[256];
@@ -236,7 +257,7 @@ void Hash_OutputData_multiD(Hashtable *h, double *e, double *v, int d, ...)
   va_end(args);
   
   k = hash(buf, h->m);
-  HashNode *currNode = h->table[k];
+  hashNode *currNode = h->table[k];
 
   while(currNode != NULL)
   {
@@ -262,12 +283,12 @@ void Hash_OutputData_multiD(Hashtable *h, double *e, double *v, int d, ...)
 @%s, line %d.\n", buf, __FILE__, __LINE__);
 }
 
-void Hash_Dump_multiD(Hashtable *h, double **arr, char **keyList, 
+void Hash_dump_multiD(hashTable *h, double **arr, char **keyList, 
     int *dimensionList, char ***vectorKeyList)
 {
   int i, j;
   char buf[256];
-  HashNode *currNode;
+  hashNode *currNode;
 
   for(i=0, j=0; i<h->m; i++)
   {
@@ -291,7 +312,7 @@ void Hash_Dump_multiD(Hashtable *h, double **arr, char **keyList,
           buf[0] = '\0';
           strcat(buf, currNode->stringKey);
           buf[strlen(buf)-1] = '\0';
-          Hash_OutputData_multiD(h, &arr[j][0], &arr[j][1], 1, buf+1);
+          Hash_outputData_multiD(h, &arr[j][0], &arr[j][1], 1, buf+1);
         }
         else
         {
@@ -308,13 +329,13 @@ void Hash_Dump_multiD(Hashtable *h, double **arr, char **keyList,
   }
 }
 
-void Hash_InsertKey(Hashtable *h, const char *key) 
-{ Hash_InsertKey_multiD(h, 1, key); }
-void Hash_RemoveKey(Hashtable *h, const char *key)
-{ Hash_RemoveKey_multiD(h, 1, key); }
-void Hash_AddData(Hashtable *h, double x, const char *key)
-{ Hash_AddData_multiD(h, x, 1, key); }
-void Hash_OutputData(Hashtable *h, double *e, double *v, const char *key)
-{ Hash_OutputData_multiD(h, e, v, 1, key); }
-void Hash_Dump(Hashtable *h, double **arr, char **keyList)
-{ Hash_Dump_multiD(h, arr, keyList, NULL, NULL); }
+void Hash_insertKey(hashTable *h, const char *key) 
+{ Hash_insertKey_multiD(h, 1, key); }
+void Hash_removeKey(hashTable *h, const char *key)
+{ Hash_removeKey_multiD(h, 1, key); }
+void Hash_addData(hashTable *h, double x, const char *key)
+{ Hash_addData_multiD(h, x, 1, key); }
+void Hash_outputData(hashTable *h, double *e, double *v, const char *key)
+{ Hash_outputData_multiD(h, e, v, 1, key); }
+void Hash_dump(hashTable *h, double **arr, char **keyList)
+{ Hash_dump_multiD(h, arr, keyList, NULL, NULL); }
