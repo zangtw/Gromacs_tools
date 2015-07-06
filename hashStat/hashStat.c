@@ -102,7 +102,7 @@ static void genMultiDimensionalStrings(int d, char **v, char *s, va_list args)
 static void Hash_insertKey_Kernel(hashTable *h, char *key, int d, va_list args)
 {
   int bBuf = (key == NULL); 
-  char string_buf[256]; /* will be used only when key is not avaiable */
+  char string_buf[256]; /* will only be used when key is not avaiable */
   char **vector_buf;
   int i;
   int k;
