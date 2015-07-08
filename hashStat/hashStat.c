@@ -4,11 +4,18 @@
 #include <stdio.h>
 #include <string.h>
 
+typedef union t_morphling{
+  int d;
+  double f;
+  char *s;
+}Morphling;
+
 typedef struct hashNode_t hashNode;
 struct hashNode_t{
   int dimension;
-  char **vectorKey;
+  char *format;
   char *stringKey;
+  Morphling *vectorKey;
   double s, e, v;
   hashNode *next;
 };
@@ -61,9 +68,11 @@ void Hash_del(hashTable *h)
     {
       nextNode = currNode->next;
       
-      for(j=0; j<currNode->dimension; j++)
-        free(currNode->vectorKey[j]);
+      for(j=0; j< currNode->dimension; j++)
+        if (currNode->format[j] == 's')
+          free(currNode->vectorKey[j].s);
       free(currNode->vectorKey);
+      free(currNode->format);
       free(currNode->stringKey);
       free(currNode);
       h->size--;
@@ -80,35 +89,52 @@ void Hash_getSize(hashTable *h, int *size)
   *size = h->size;
 }
 
-static void genMultiDimensionalStrings(int d, char **v, char *s, va_list args)
+static void genMultiDimensionalKeys(const char *format, Morphling *v, 
+    char *s, va_list args)
 {
-  int i;
-  char *temp;
+  Morphling temp;
 
   if(s != NULL) { s[0] = '|'; s[1] = '\0';}
 
-  for(i=0; i<d; i++)
+  while( *format != '\0' )
   {
-    temp = va_arg(args, char*);
-    
-    if(s != NULL)
-      sprintf(s+strlen(s), "%s|", temp);
+    switch(*format)
+    {
+      case 's':
+        temp.s = va_arg(args, char*);
+        if(s != NULL)
+          sprintf(s+strlen(s), "%s|", temp.s);
+        break;
+      case 'f':
+        temp.f = va_arg(args, double);
+        if(s != NULL)
+          sprintf(s+strlen(s), "%fF|", temp.f);
+        break;
+      default:  /* int */
+        temp.d = va_arg(args, int);
+        if(s != NULL)
+          sprintf(s+strlen(s), "%dD|", temp.d);
+    }
     
     if(v != NULL)
-      v[i] = temp;
+      *v++ = temp;
+
+    format++;
   }
 }
 
-static void Hash_insertKey_Kernel(hashTable *h, char *key, int d, va_list args)
+static void Hash_insertKey_Kernel(hashTable *h, char *key, 
+    const char *format, va_list args)
 {
   int bBuf = (key == NULL); 
-  char string_buf[256]; /* will only be used when key is not available. */
-  char **vector_buf;
+  char string_buf[MAX_KEY_SIZE]; /* will only be used when key is not available. */
+  Morphling *vector_buf;
+  int dimension = strlen(format);
   int i;
   int k;
 
-  vector_buf = (char **)malloc(d * sizeof(char *));
-  genMultiDimensionalStrings(d, vector_buf, bBuf ? string_buf : NULL, args);
+  vector_buf = (Morphling *)malloc(dimension * sizeof(Morphling));
+  genMultiDimensionalKeys(format, vector_buf, bBuf ? string_buf : NULL, args);
   
 #define mykey (bBuf ? string_buf : key)
 
@@ -130,17 +156,26 @@ static void Hash_insertKey_Kernel(hashTable *h, char *key, int d, va_list args)
   newNode = (hashNode *)malloc(sizeof(hashNode));
   h->size++;
 
-  newNode->dimension = d;
-  newNode->vectorKey = (char **)malloc(d * sizeof(char *));
-  for(i=0; i<d; i++)
+  newNode->dimension = dimension;
+  
+  newNode->stringKey = (char *)malloc(MAX_KEY_SIZE * sizeof(char));
+  strcpy(newNode->stringKey, mykey);
+  
+  newNode->format = (char *)malloc(dimension * sizeof(char));
+  strcpy(newNode->format, format);
+  
+  newNode->vectorKey = (Morphling *)malloc(dimension * sizeof(Morphling));
+  for(i=0; i<dimension; i++)
   {
-    newNode->vectorKey[i] = (char *)malloc(256 * sizeof(char));
-    newNode->vectorKey[i][0] = '\0';  /* is it necessary?? */
-    strcat(newNode->vectorKey[i], vector_buf[i]); /* copy from the stack */
+    if(format[i] == 's') 
+    {
+      /* need to copy from the stack */ 
+      newNode->vectorKey[i].s = (char *)malloc(MAX_KEY_SIZE * sizeof(char));
+      strcpy(newNode->vectorKey[i].s, vector_buf[i].s);
+    }
+    else
+      newNode->vectorKey[i] = vector_buf[i];
   }
-  newNode->stringKey = (char *)malloc(256 * sizeof(char));
-  newNode->stringKey[0] = '\0'; 
-  strcat(newNode->stringKey, mykey);
   newNode->s = newNode->e = newNode->v = 0;
 
   newNode->next = h->table[k];
@@ -151,25 +186,25 @@ static void Hash_insertKey_Kernel(hashTable *h, char *key, int d, va_list args)
 #undef mykey
 }
 
-void Hash_insertKey_multiD(hashTable *h, int d, ...)
+void Hash_insertKey(hashTable *h, const char *format, ...)
 {
   va_list args;
-  va_start(args, d);
+  va_start(args, format);
   
-  Hash_insertKey_Kernel(h, NULL, d, args);
+  Hash_insertKey_Kernel(h, NULL, format, args);
 
   va_end(args);
 }
 
-void Hash_removeKey_multiD(hashTable *h, int d, ...)
+void Hash_removeKey(hashTable *h, const char *format, ...)
 {
   va_list args;
-  char buf[256];
+  char buf[MAX_KEY_SIZE];
   int i;
   int k;
   
-  va_start(args, d);
-  genMultiDimensionalStrings(d, NULL, buf, args);
+  va_start(args, format);
+  genMultiDimensionalKeys(format, NULL, buf, args);
   va_end(args);
   
   k = hash(buf, h->m);
@@ -186,10 +221,12 @@ void Hash_removeKey_multiD(hashTable *h, int d, ...)
       else
         lastNode->next = currNode->next;
       
-      for(i=0; i<currNode->dimension; i++)
-        free(currNode->vectorKey[i]);
+      for(i=0; i< currNode->dimension; i++)
+        if (currNode->format[i] == 's')
+          free(currNode->vectorKey[i].s);
       free(currNode->vectorKey);
       free(currNode->stringKey);
+      free(currNode->format);
       free(currNode);
       h->size--;
 
@@ -204,14 +241,14 @@ void Hash_removeKey_multiD(hashTable *h, int d, ...)
 @%s, line %d.\n", buf, __FILE__, __LINE__);
 }
 
-void Hash_addData_multiD(hashTable *h, double x, int d, ...)
+void Hash_addData(hashTable *h, double x, const char *format, ...)
 {
   va_list args;
-  char buf[256];
+  char buf[MAX_KEY_SIZE];
   int k;
   
-  va_start(args, d);
-  genMultiDimensionalStrings(d, NULL, buf, args);
+  va_start(args, format);
+  genMultiDimensionalKeys(format, NULL, buf, args);
   va_end(args);
   
   k = hash(buf, h->m);
@@ -237,8 +274,8 @@ void Hash_addData_multiD(hashTable *h, double x, int d, ...)
   fprintf(stderr, "AddData: key \"%s\" is not available. Will add a new key. \
 @%s, line %d.\n", buf, __FILE__, __LINE__);
 
-  va_start(args, d);
-  Hash_insertKey_Kernel(h, buf, d, args);
+  va_start(args, format);
+  Hash_insertKey_Kernel(h, buf, format, args);
   va_end(args);
   
   currNode = h->table[k];
@@ -246,14 +283,15 @@ void Hash_addData_multiD(hashTable *h, double x, int d, ...)
   currNode->e += x;
 }
 
-void Hash_outputData_multiD(hashTable *h, double *e, double *v, int d, ...)
+void Hash_printData(hashTable *h, double *e, double *v, 
+    const char *format, ...)
 {
   va_list args;
-  char buf[256];
+  char buf[MAX_KEY_SIZE];
   int k;
   
-  va_start(args, d);
-  genMultiDimensionalStrings(d, NULL, buf, args);
+  va_start(args, format);
+  genMultiDimensionalKeys(format, NULL, buf, args);
   va_end(args);
   
   k = hash(buf, h->m);
@@ -283,11 +321,11 @@ void Hash_outputData_multiD(hashTable *h, double *e, double *v, int d, ...)
 @%s, line %d.\n", buf, __FILE__, __LINE__);
 }
 
-void Hash_dump_multiD(hashTable *h, double **arr, char **keyList, 
-    int *dimensionList, char ***vectorKeyList)
+void Hash_dump(hashTable *h, double **arr, char **keyList, 
+    int *dimensionList, char **formatList, void **vectorKeyList)
 {
   int i, j;
-  char buf[256];
+  char buf[MAX_KEY_SIZE];
   hashNode *currNode;
 
   for(i=0, j=0; i<h->m; i++)
@@ -302,17 +340,19 @@ void Hash_dump_multiD(hashTable *h, double **arr, char **keyList,
       if(dimensionList != NULL)
         dimensionList[j] = currNode->dimension;
 
+      if(formatList != NULL)
+        formatList[j] = currNode->format;
+
       if(vectorKeyList != NULL)
-        vectorKeyList[j] = currNode->vectorKey;
+        vectorKeyList[j] = (void *)currNode->vectorKey;
       
       if(arr != NULL)
       {
         if(arr[j] != NULL)
         {
-          buf[0] = '\0';
-          strcat(buf, currNode->stringKey);
+          strcpy(buf, currNode->stringKey);
           buf[strlen(buf)-1] = '\0';
-          Hash_outputData_multiD(h, &arr[j][0], &arr[j][1], 1, buf+1);
+          Hash_printData(h, &arr[j][0], &arr[j][1], "s", buf+1);
         }
         else
         {
@@ -328,15 +368,3 @@ void Hash_dump_multiD(hashTable *h, double **arr, char **keyList,
     }
   }
 }
-
-/* C does not support overloading :(    */
-void Hash_insertKey(hashTable *h, const char *key) 
-{ Hash_insertKey_multiD(h, 1, key); }
-void Hash_removeKey(hashTable *h, const char *key)
-{ Hash_removeKey_multiD(h, 1, key); }
-void Hash_addData(hashTable *h, double x, const char *key)
-{ Hash_addData_multiD(h, x, 1, key); }
-void Hash_outputData(hashTable *h, double *e, double *v, const char *key)
-{ Hash_outputData_multiD(h, e, v, 1, key); }
-void Hash_dump(hashTable *h, double **arr, char **keyList)
-{ Hash_dump_multiD(h, arr, keyList, NULL, NULL); }
