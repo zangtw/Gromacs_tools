@@ -9,7 +9,7 @@ int main()
   double **a;
   char **stringKeyList;
   char **formatList;
-  void **vectorKeyList;
+  void ***vectorKeyList;
   int *dimensionList;
   double e, v;
   int i, j;
@@ -60,7 +60,7 @@ int main()
   printf("\nSIMPLE DUMP TESTING RESULTS");
   printf("\nKEY                               MEAN      STD DEV\n");
   stringKeyList = (char **)malloc(size * sizeof(char *));
-  vectorKeyList = (void **)malloc(size * sizeof(char *));
+  vectorKeyList = (void ***)malloc(size * sizeof(void **));
   dimensionList = (int *)malloc(size * sizeof(int));
   formatList = (char **)malloc(size * sizeof(char *));
   a = (double **)malloc(size * sizeof(double *));
@@ -76,7 +76,6 @@ int main()
   printf("\nKEY              DIMENSION             MEAN      STD DEV\tFORMAT\n");
   Hash_dump(h, a, stringKeyList, dimensionList, formatList, vectorKeyList);
   
-  double *temp;
   for(i=0; i< size; i++)
   {
     printf("%-25s%-5d%13.6f%13.6f\t%s\n", stringKeyList[i], dimensionList[i], 
@@ -84,13 +83,11 @@ int main()
     printf("           key vector:     ");
     for(j=0; j<dimensionList[i]; j++)
     {
-      temp = (double *)vectorKeyList[i];
-      
       if (formatList[i][j] == 's')
-        printf("%-5s  ", *(char **)(temp + j));
+        printf("%-5s  ", (char *)(vectorKeyList[i][j]));
       else if (formatList[i][j] == 'f')
-        printf("%-5f  ", *(temp + j));
-      else printf("%-5d  ", *(int *)(temp + j));
+        printf("%-5f  ", *(double *)(vectorKeyList[i][j]));
+      else printf("%-5d  ", *(int *)(vectorKeyList[i][j]));
     }
     printf("\n");
   }

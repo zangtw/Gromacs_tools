@@ -4,18 +4,12 @@
 #include <stdio.h>
 #include <string.h>
 
-typedef union t_morphling{
-  int d;
-  double f;
-  char *s;
-}Morphling;
-
 typedef struct hashNode_t hashNode;
 struct hashNode_t{
   int dimension;
   char *format;
   char *stringKey;
-  Morphling *vectorKey;
+  void **vectorKey;
   double s, e, v;
   hashNode *next;
 };
@@ -65,8 +59,17 @@ void Hash_del(hashTable *h)
       nextNode = currNode->next;
       
       for(j=0; j< currNode->dimension; j++)
-        if (currNode->format[j] == 's')
-          free(currNode->vectorKey[j].s);
+      {
+        switch (currNode->format[j])
+        {
+          case 's':
+            free((char*) (currNode->vectorKey[j])); break;
+          case 'f':
+            free((double *) (currNode->vectorKey[j])); break;
+          default:
+            free((int *) (currNode->vectorKey[j])); break;
+        }
+      }
       free(currNode->vectorKey);
       free(currNode->format);
       free(currNode->stringKey);
@@ -85,10 +88,13 @@ void Hash_getSize(hashTable *h, int *size)
   *size = h->size;
 }
 
-static void genMultiDimensionalKeys(const char *format, Morphling *v, 
+static void genMultiDimensionalKeys(const char *format, void **v, 
     char *s, va_list args)
 {
-  Morphling temp;
+  char *s_temp;
+  int d_temp;
+  double f_temp;
+  void **v_temp = v;
 
   if(s != NULL) { s[0] = '|'; s[1] = '\0';}
 
@@ -97,23 +103,38 @@ static void genMultiDimensionalKeys(const char *format, Morphling *v,
     switch(*format)
     {
       case 's':
-        temp.s = va_arg(args, char*);
+        s_temp = va_arg(args, char*);
         if(s != NULL)
-          sprintf(s+strlen(s), "%s|", temp.s);
+          sprintf(s+strlen(s), "%s|", s_temp);
+        if(v != NULL)
+        {
+          *v_temp = (void *)malloc(strlen(s_temp) * sizeof(char));
+          strcpy((char *)(*v_temp), s_temp);
+        }
         break;
       case 'f':
-        temp.f = va_arg(args, double);
+        f_temp = va_arg(args, double);
         if(s != NULL)
-          sprintf(s+strlen(s), "%fF|", temp.f);
+          sprintf(s+strlen(s), "%fF|", f_temp);
+        if(v != NULL)
+        {
+          *v_temp = (double *)malloc(sizeof(double));
+          *((double *)(*v_temp)) = f_temp;
+        }
         break;
       default:  /* int */
-        temp.d = va_arg(args, int);
+        d_temp = va_arg(args, int);
         if(s != NULL)
-          sprintf(s+strlen(s), "%dD|", temp.d);
+          sprintf(s+strlen(s), "%dD|", d_temp);
+        if(v != NULL)
+        {
+          *v_temp = (int *)malloc(sizeof(int));
+          *((int *)(*v_temp)) = d_temp;
+        }
     }
     
     if(v != NULL)
-      *v++ = temp;
+      v_temp ++;
 
     format++;
   }
@@ -124,12 +145,12 @@ static void Hash_insertKey_Kernel(hashTable *h, char *key,
 {
   int bBuf = (key == NULL); 
   char string_buf[MAX_KEY_LENGTH]; /* will only be used when key is not available. */
-  Morphling *vector_buf;
+  void **vector_buf;
   int dimension = strlen(format);
   int i;
   int k;
 
-  vector_buf = (Morphling *)malloc(dimension * sizeof(Morphling));
+  vector_buf = (void **)malloc(dimension * sizeof(void *));
   genMultiDimensionalKeys(format, vector_buf, bBuf ? string_buf : NULL, args);
   
 #define mykey (bBuf ? string_buf : key)
@@ -160,18 +181,9 @@ static void Hash_insertKey_Kernel(hashTable *h, char *key,
   newNode->format = (char *)malloc(dimension * sizeof(char));
   strcpy(newNode->format, format);
   
-  newNode->vectorKey = (Morphling *)malloc(dimension * sizeof(Morphling));
+  newNode->vectorKey = (void **)malloc(dimension * sizeof(void *));
   for(i=0; i<dimension; i++)
-  {
-    if(format[i] == 's') 
-    {
-      /* need to copy from the stack */ 
-      newNode->vectorKey[i].s = (char *)malloc(MAX_KEY_LENGTH * sizeof(char));
-      strcpy(newNode->vectorKey[i].s, vector_buf[i].s);
-    }
-    else
-      newNode->vectorKey[i] = vector_buf[i];
-  }
+    newNode->vectorKey[i] = vector_buf[i];
   newNode->s = newNode->e = newNode->v = 0;
 
   newNode->next = h->table[k];
@@ -218,8 +230,17 @@ void Hash_removeKey(hashTable *h, const char *format, ...)
         lastNode->next = currNode->next;
       
       for(i=0; i< currNode->dimension; i++)
-        if (currNode->format[i] == 's')
-          free(currNode->vectorKey[i].s);
+      {
+        switch (currNode->format[i])
+        {
+          case 's':
+            free((char*) (currNode->vectorKey[i])); break;
+          case 'f':
+            free((double *) (currNode->vectorKey[i])); break;
+          default:
+            free((int *) (currNode->vectorKey[i])); break;
+        }
+      }
       free(currNode->vectorKey);
       free(currNode->stringKey);
       free(currNode->format);
@@ -318,7 +339,7 @@ void Hash_printData(hashTable *h, double *e, double *v,
 }
 
 void Hash_dump(hashTable *h, double **arr, char **keyList, 
-    int *dimensionList, char **formatList, void **vectorKeyList)
+    int *dimensionList, char **formatList, void ***vectorKeyList)
 {
   int i, j;
   char buf[MAX_KEY_LENGTH];
@@ -340,7 +361,7 @@ void Hash_dump(hashTable *h, double **arr, char **keyList,
         formatList[j] = currNode->format;
 
       if(vectorKeyList != NULL)
-        vectorKeyList[j] = (void *)currNode->vectorKey;
+        vectorKeyList[j] = currNode->vectorKey;
       
       if(arr != NULL)
       {

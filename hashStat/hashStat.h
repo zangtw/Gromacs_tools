@@ -14,7 +14,7 @@ void Hash_addData(hashTable *h, double x, const char *format, ...);
 void Hash_printData(hashTable *h, double *e, double *v, 
     const char *format, ...);
 void Hash_dump(hashTable *h, double **arr, char **keyList, 
-    int *dimensionList, char **formatList, void **vectorKeyList);
+    int *dimensionList, char **formatList, void ***vectorKeyList);
 
 #define MAX_KEY_LENGTH 256
 
