@@ -29,13 +29,9 @@ struct hashTable_t{
 static int hash(const char *str, int m)
 {
   unsigned long hash = 5381;
-  int i = 0;
 
-  while (i < strlen(str))
-  {
-    hash = ((hash << 5) + hash) + str[i];
-    i++;
-  }
+  while (*str++)
+    hash = ((hash << 5) + hash) + *str;
 
   return hash % m;
 }
