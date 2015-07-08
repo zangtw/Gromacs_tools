@@ -123,7 +123,7 @@ static void Hash_insertKey_Kernel(hashTable *h, char *key,
     const char *format, va_list args)
 {
   int bBuf = (key == NULL); 
-  char string_buf[MAX_KEY_SIZE]; /* will only be used when key is not available. */
+  char string_buf[MAX_KEY_LENGTH]; /* will only be used when key is not available. */
   Morphling *vector_buf;
   int dimension = strlen(format);
   int i;
@@ -154,7 +154,7 @@ static void Hash_insertKey_Kernel(hashTable *h, char *key,
 
   newNode->dimension = dimension;
   
-  newNode->stringKey = (char *)malloc(MAX_KEY_SIZE * sizeof(char));
+  newNode->stringKey = (char *)malloc(MAX_KEY_LENGTH * sizeof(char));
   strcpy(newNode->stringKey, mykey);
   
   newNode->format = (char *)malloc(dimension * sizeof(char));
@@ -166,7 +166,7 @@ static void Hash_insertKey_Kernel(hashTable *h, char *key,
     if(format[i] == 's') 
     {
       /* need to copy from the stack */ 
-      newNode->vectorKey[i].s = (char *)malloc(MAX_KEY_SIZE * sizeof(char));
+      newNode->vectorKey[i].s = (char *)malloc(MAX_KEY_LENGTH * sizeof(char));
       strcpy(newNode->vectorKey[i].s, vector_buf[i].s);
     }
     else
@@ -195,7 +195,7 @@ void Hash_insertKey(hashTable *h, const char *format, ...)
 void Hash_removeKey(hashTable *h, const char *format, ...)
 {
   va_list args;
-  char buf[MAX_KEY_SIZE];
+  char buf[MAX_KEY_LENGTH];
   int i;
   int k;
   
@@ -240,7 +240,7 @@ void Hash_removeKey(hashTable *h, const char *format, ...)
 void Hash_addData(hashTable *h, double x, const char *format, ...)
 {
   va_list args;
-  char buf[MAX_KEY_SIZE];
+  char buf[MAX_KEY_LENGTH];
   int k;
   
   va_start(args, format);
@@ -283,7 +283,7 @@ void Hash_printData(hashTable *h, double *e, double *v,
     const char *format, ...)
 {
   va_list args;
-  char buf[MAX_KEY_SIZE];
+  char buf[MAX_KEY_LENGTH];
   int k;
   
   va_start(args, format);
@@ -321,7 +321,7 @@ void Hash_dump(hashTable *h, double **arr, char **keyList,
     int *dimensionList, char **formatList, void **vectorKeyList)
 {
   int i, j;
-  char buf[MAX_KEY_SIZE];
+  char buf[MAX_KEY_LENGTH];
   hashNode *currNode;
 
   for(i=0, j=0; i<h->m; i++)

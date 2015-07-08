@@ -16,6 +16,6 @@ void Hash_printData(hashTable *h, double *e, double *v,
 void Hash_dump(hashTable *h, double **arr, char **keyList, 
     int *dimensionList, char **formatList, void **vectorKeyList);
 
-#define MAX_KEY_SIZE 256
+#define MAX_KEY_LENGTH 256
 
 #endif
