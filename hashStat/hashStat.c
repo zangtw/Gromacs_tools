@@ -108,7 +108,7 @@ static void genMultiDimensionalKeys(const char *format, void **v,
           sprintf(s+strlen(s), "%s|", s_temp);
         if(v != NULL)
         {
-          *v_temp = (void *)malloc(strlen(s_temp) * sizeof(char));
+          *v_temp = (void *)malloc((strlen(s_temp) + 1) * sizeof(char));
           strcpy((char *)(*v_temp), s_temp);
         }
         break;
@@ -178,7 +178,7 @@ static void Hash_insertKey_Kernel(hashTable *h, char *key,
   newNode->stringKey = (char *)malloc(MAX_KEY_LENGTH * sizeof(char));
   strcpy(newNode->stringKey, mykey);
   
-  newNode->format = (char *)malloc(dimension * sizeof(char));
+  newNode->format = (char *)malloc((dimension + 1) * sizeof(char));
   strcpy(newNode->format, format);
   
   newNode->vectorKey = (void **)malloc(dimension * sizeof(void *));
