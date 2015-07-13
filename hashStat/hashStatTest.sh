@@ -13,7 +13,7 @@ if [ "$(uname)" == 'Linux' ]; then
 elif [ "$(uname)" == 'Darwin' ]; then
   $CC $CFLAGS -dynamiclib -Wall -Werror -install_name @rpath/libhashStat.dylib -o libhashStat.dylib hashStat.c
 else
-	echo platform not supported!
+  echo platform not supported!
   exit 1
 fi
 
