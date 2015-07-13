@@ -10,8 +10,9 @@ void Hash_del(hashTable *h);
 void Hash_getSize(hashTable *h, int *size);
 void Hash_insertKey(hashTable *h, const char *format, ...);
 void Hash_removeKey(hashTable *h, const char *format, ...);
+void Hash_setReferenceValue(hashTable *h, double ref, const char *format, ...);
 void Hash_addData(hashTable *h, double x, const char *format, ...);
-void Hash_printData(hashTable *h, double *e, double *v, 
+void Hash_printData(hashTable *h, double *e, double *v, double *ref,
     const char *format, ...);
 void Hash_dump(hashTable *h, double **arr, char **keyList, 
     int *dimensionList, char **formatList, void ***vectorKeyList);

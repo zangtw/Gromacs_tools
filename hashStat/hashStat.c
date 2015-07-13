@@ -11,6 +11,7 @@ struct hashNode_t{
   char *stringKey;
   void **vectorKey;
   double s, e, v;
+  double ref;
   hashNode *next;
 };
 
@@ -185,6 +186,7 @@ static void Hash_insertKey_Kernel(hashTable *h, char *key,
   for(i=0; i<dimension; i++)
     newNode->vectorKey[i] = vector_buf[i];
   newNode->s = newNode->e = newNode->v = 0;
+  newNode->ref = 0;
 
   newNode->next = h->table[k];
   h->table[k] = newNode;
@@ -258,6 +260,41 @@ void Hash_removeKey(hashTable *h, const char *format, ...)
 @%s, line %d.\n", buf, __FILE__, __LINE__);
 }
 
+void Hash_setReferenceValue(hashTable *h, double ref, const char *format, ...)
+{
+  va_list args;
+  char buf[MAX_KEY_LENGTH];
+  int k;
+  
+  va_start(args, format);
+  genMultiDimensionalKeys(format, NULL, buf, args);
+  va_end(args);
+  
+  k = hash(buf, h->m);
+  hashNode *currNode = h->table[k];
+
+  while(currNode != NULL)
+  {
+    if(! strcmp(buf, currNode->stringKey))
+    {
+      currNode->ref = ref;
+      return;
+    }
+
+    currNode = currNode->next;
+  }
+
+  fprintf(stderr, "SetReferenceValue: key \"%s\" is not available. Will add a new key. \
+@%s, line %d.\n", buf, __FILE__, __LINE__);
+
+  va_start(args, format);
+  Hash_insertKey_Kernel(h, buf, format, args);
+  va_end(args);
+  
+  currNode = h->table[k];
+  currNode->ref = ref;
+}
+
 void Hash_addData(hashTable *h, double x, const char *format, ...)
 {
   va_list args;
@@ -300,7 +337,7 @@ void Hash_addData(hashTable *h, double x, const char *format, ...)
   currNode->e += x;
 }
 
-void Hash_printData(hashTable *h, double *e, double *v, 
+void Hash_printData(hashTable *h, double *e, double *v, double *ref,
     const char *format, ...)
 {
   va_list args;
@@ -320,14 +357,22 @@ void Hash_printData(hashTable *h, double *e, double *v,
     {
       if(currNode->s == 0)
       {
-        *e = 0;
-        *v = 0;
+        if( e != NULL)
+          *e = 0;
+        if( v != NULL)
+          *v = 0;
       }
       else
       {
-        *e = currNode->e / currNode->s;
-        *v = currNode->v / currNode->s;
+        if( e != NULL)
+          *e = currNode->e / currNode->s;
+        if( v != NULL)
+          *v = currNode->v / currNode->s;
       }
+      
+      if(ref != NULL)
+        *ref = currNode->ref;
+      
       return;
     }
 
@@ -369,7 +414,7 @@ void Hash_dump(hashTable *h, double **arr, char **keyList,
         {
           strcpy(buf, currNode->stringKey);
           buf[strlen(buf)-1] = '\0';
-          Hash_printData(h, &arr[j][0], &arr[j][1], "s", buf+1);
+          Hash_printData(h, &arr[j][0], &arr[j][1], &arr[j][2], "s", buf+1);
         }
         else
         {
