@@ -1,0 +1,19 @@
+CC=gcc
+CFLAGS=
+
+GROMACS_INCLUDE_PATH=/Users/mark_z/Softwares/include/gromacs/
+GROMACS_LIB_PATH=/Users/mark_z/Softwares/lib/
+
+GMX_LIB_NM=gmx_46
+MD_LIB_NM=md_46
+
+HASHSTAT_INCLUDE_PATH=$(PWD)/hashStat
+HASHSTAT_LIB_PATH=$(PWD)/hashStat
+
+all:
+	$(CC) $(CFLAGS) genPairStat.c -o genPairStat -I $(HASHSTAT_INCLUDE_PATH) -I $(GROMACS_INCLUDE_PATH) -L $(HASHSTAT_LIB_PATH) -L $(GROMACS_LIB_PATH) -l hashStat -l $(GMX_LIB_NM) -l $(MD_LIB_NM) -Wl,-rpath,$(HASHSTAT_LIB_PATH)
+
+debug: CFLAGS = -g3 -O0
+debug: GMX_LIB_NM = gmx_debug
+debug: MD_LIB_NM = md_debug
+debug: all
